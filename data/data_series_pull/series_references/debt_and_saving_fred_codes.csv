@@ -1,0 +1,11 @@
+codes,labels
+B069RC1,Personalinterestpayments
+DSPI,DisposablePersonalIncome
+PMSAVE,PersonalSaving
+PSAVERT,PersonalSavingRate
+PCEDG,PCEDurableGoods
+PCEND,PCENonDurableGoods
+PCES,PCEServices
+FLREVOLSL,RevolvingCreditChange
+FLNONREVSL,NonRevolvingCreditChange
+TOTALSL,TotalCredit
