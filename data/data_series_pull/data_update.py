@@ -19,7 +19,5 @@ def pull_all_data(start_date='1995-01-01', replace=True):
     delinquency_rates.download_delinquency_data(start_date, replace)
     cpi.download_cpi_data(start_date, replace)
 
-
-
-if __name__ == "__main__":
-    pull_all_data(replace=True)
+if __name__ == '__main__':
+    pull_all_data(replace=True )
