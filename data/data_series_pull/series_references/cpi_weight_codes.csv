@@ -1,4 +1,4 @@
-index_item,weights,fred_codes
+name,weights,codes
 AdmissiontoMoviesTheatersandConcerts,0.468,CUSR0000SS62031
 Personalcareservices,0.546,CUSR0000SS61031
 Airlinefares,0.481,CUSR0000SETG01

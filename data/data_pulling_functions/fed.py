@@ -1,8 +1,10 @@
 import pandas as pd
 import requests
 from time import sleep
+from functools import cache
 
 
+@cache
 def data_from_fed(indicator, name_of_series=None, start_date='2015-01-01', end_date=None,
                   file_type='json', freq=None, aggregation_method=None, remove_na=True,exception_call=False):
     '''

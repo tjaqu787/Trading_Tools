@@ -1,41 +1,24 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import datetime
 from data.data_pulling_functions import option_quote
-
+import warnings
+import plotly.graph_objects as go
+warnings.filterwarnings("ignore")
 
 class OptionSpreads():
-    def __init__(self, symbol, strike, option_chain):
+    def __init__(self, symbol,put_or_call):
         self.symbol = symbol
-        self.strike = strike
-        self.option_chain = option_chain
-        self.vert_or_call = self.detect_vert_or_cal()
+        self.put_or_call = put_or_call
+        self.dates = option_quote.get_expiration_dates(self.symbol)
     
-    def detect_vert_or_cal(self):
-        
-        if 'Strike' in self.option_chain:
-            self.vertical_spread()
-            return 'Vertical'
-        
-        elif 'Expire Date' in self.option_chain:
-            self.calendar_spread()
-            return 'Calendar'
-        
-        elif isinstance(self.option_chain, pd.DataFrame):
-            ValueError('Reformat df')
-            return
-        
-        else:
-            ValueError("Nat a valid DF")
-            return
-    
-    def vertical_spread(self, return_df=False):
-        option_chain = self.option_chain.rename(columns={'Strike': 'Buy_Strike'})
+    def vertical_spread(self,expiry_date):
+        option_chain = option_quote.for_vertical(self.symbol, expiry_date, self.put_or_call)
+        option_chain = option_chain.rename(columns={'Strike': 'Buy_Strike'})
         option_chain = option_chain.set_index('Buy_Strike')
         
         option_spreads = pd.DataFrame()
+        print('processing vertical spreads')
         for buy in option_chain.index:
             for sell in option_chain.index:
                 if buy != sell:
@@ -60,28 +43,31 @@ class OptionSpreads():
         
         option_spreads = option_spreads.set_index(keys=["Buy_Strike", "Sell_Strike"])
         
-        self.option_spreads = option_spreads
-        
-        if return_df:
-            return option_spreads
+        return option_spreads
     
-    def calendar_spread(self, return_df=False):
-        option_chain = self.option_chain.rename(columns={'Expire Date': 'Buy_Date'})
-        option_chain = option_chain.set_index('Buy_Date')
-        
+    def calendar_spread(self,strike):
+        option_chain = option_quote.for_calendar(self.symbol,strike,self.put_or_call)
+        option_chain.index = option_chain['Expire Date']
+        print('processing calendar spreads')
         option_spreads = pd.DataFrame()
         for buy in option_chain.index:
             for sell in option_chain.index:
                 if buy != sell:
                     bid = round(option_chain.loc[buy, 'Bid'] - option_chain.loc[sell, 'Ask'], 1)
                     ask = round(option_chain.loc[buy, 'Ask'] - option_chain.loc[sell, 'Bid'], 1)
-                    delta = datetime.datetime.strptime(buy, '%Y-%m-%d').date() - datetime.datetime.strptime(sell,
-                                                                                                            '%Y-%m-%d').date()
+                    delta = datetime.datetime.strptime(buy, '%Y-%m-%d').date() - \
+                            datetime.datetime.strptime(sell, '%Y-%m-%d').date()
+                    
+                    # create a weighted average of ask and bid to calculate dollars per day
                     try:
                         payoff = int(int(delta.days) / ((ask * 2 + bid) / 3))
                     except OverflowError:
                         payoff = int(int(delta.days) / ((ask * 2 + bid + 1) / 3))
+                    except RuntimeWarning:
+                        payoff = int(int(delta.days) / ((ask * 2 + bid + 1) / 3))
+                        
                     bid_ask = f'{bid}-{ask}\n{delta.days}'
+                    
                 else:
                     payoff = 0
                     bid = '-'
@@ -95,33 +81,32 @@ class OptionSpreads():
         option_spreads = option_spreads.rename(columns=new_dict)
         
         option_spreads = option_spreads.set_index(keys=["Buy_Date", "Sell_Date"])
-        self.option_spreads = option_spreads
         
-        if return_df:
-            return option_spreads
+        return option_spreads
     
-    def formatting_for_visualisation(self):
-        graph_input = self.option_spreads['Bid-Ask\nPayoff']
-        graph_input = graph_input.unstack(level=-1)
-        graph_input = np.asarray(graph_input)
-        
-        colouring = pd.DataFrame(self.option_spreads['risk_reward'])
-        colouring = colouring.rename(columns={'risk_reward': ''})
-        colouring = colouring.unstack(level=-1)
-        
-        return colouring, graph_input
+    @staticmethod
+    def plotter(dataframe_from_class):
+        text = np.asarray(dataframe_from_class['Bid-Ask\nPayoff'].unstack(level=-1))
     
-    def plotter(self):
-        colouring, graph_input = self.formatting_for_visualisation()
-        plt.subplots(figsize=(150, 150))
-        sns.heatmap(colouring, annot=graph_input, fmt='s', linewidths=.5)
-        plt.title(self.symbol + ' ' + self.vert_or_call + ' Spread')
-        plt.show()
+        colour = pd.DataFrame(dataframe_from_class['risk_reward']).rename(columns={'risk_reward': ''}).unstack(level=-1)
+    
+        figure1 = go.Figure(go.Heatmap(x=colour.index, y=colour.columns.values, z=colour,
+                                       text=text, texttemplate="%{text}", ))
+        
+        figure1.update_layout(margin=dict(l=0, r=0, t=10, b=0))
+        return figure1
+
 
 
 if __name__ == '__main__':
-    symbol = 'kndi'
-    strike = 16
-    x = option_quote.for_calendar(symbol=symbol, strike=strike, calls_or_puts='put')
-    caw = OptionSpreads(x, strike)
-    caw.plotter()
+    symbol = 'AAPL'
+    strike = option_quote.get_expiration_dates(symbol)[4]
+    print(strike)
+    caw = OptionSpreads(symbol, 'put')
+    import plotly.graph_objects as go
+    data = caw.vertical_spread(strike)
+    colour = data['risk_reward'].unstack(level=-1)
+    text = data['Bid-Ask\nPayoff'].unstack(level=-1)
+    figure1 = go.Figure(go.Heatmap(x=colour.index.values,y=colour.columns.values, z=colour,
+                                   text=text, texttemplate="%{text}",))
+    figure1.show()

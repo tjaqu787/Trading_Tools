@@ -15,24 +15,10 @@ dash.register_page(__name__, path='/consumerhealth',
 
 @callback([Output('cx_inflation_g1', 'figure'), Output('cx_inflation_g2', 'figure'),
            Output('cx_inflation_g3', 'figure'), Output('cx_inflation_g4', 'figure'),
-           Output('cx_inflation_g5', 'figure'), Output('cx_inflation_g6', 'figure'),
-           Output('cx_inflation_table1', 'columns'), Output('cx_inflation_table1','data'),
-           Output('cx_inflation_table2', 'columns'), Output('cx_inflation_table2','data'),
-           Output('cx_inflation_table3', 'columns'), Output('cx_inflation_table3','data'),
-           Output('cx_inflation_table4', 'columns'), Output('cx_inflation_table4','data'),
-           Output('cx_inflation_table5', 'columns'), Output('cx_inflation_table5','data'),
-           Output('cx_inflation_table6', 'columns'), Output('cx_inflation_table6','data')],
-          [Input('cx_inflation_submit', 'n_clicks'), Input('cx_inflation_submit2', 'n_clicks'),
-           State('cx_inflation_table1', 'data'), State('cx_inflation_table2', 'data'),
-           State('cx_inflation_table3', 'data'), State('cx_inflation_table4', 'data'),
-           State('cx_inflation_table5', 'data'), State('cx_inflation_table6', 'data'), ])
-def update_figure(_, __, table1, table2, table3, table4, table5, table6,n_ahead=18):
-    change_array = pd.concat(objs=[pd.DataFrame(table1),
-                                   pd.DataFrame(table2),
-                                   pd.DataFrame(table3),
-                                   pd.DataFrame(table4),
-                                   pd.DataFrame(table5),
-                                   pd.DataFrame(table6)], axis=1).transpose()
+           Output('cx_inflation_g5', 'figure'), Output('cx_inflation_g6', 'figure')],
+          [Input('cx_inflation_store', 'value')])
+def update_figure(_):
+
     model = ConsumerHealthModel()
     per_cap_spending = ["PCEDurableGoods", "PCENonDurableGoods", "PCEServices", 'Personalinterestpayments',
                         'DisposablePersonalIncome', 'PersonalSaving', 'TotalCredit']
@@ -44,12 +30,7 @@ def update_figure(_, __, table1, table2, table3, table4, table5, table6,n_ahead=
                          'DelinquencyRateOnConsumerLoans']
     debt_factor_cols = ['RevolvingCreditChange', 'NonRevolvingCreditChange']
     #load forecast data and append to data array to plot
-    if change_array.empty:
-        forcast_data = model.forecast(n_ahead=n_ahead)
-        
-    else:
-        change_array = change_array.transpose()
-        forecasted_data = model.autoregressive_forecast(change_array)
+    forecasted_data = model.data_for_model()
 
     figure1 = px.line(forecasted_data, x=forecasted_data.index, y=per_cap_spending,
                       title='Personal Consumption Expenditures',
@@ -69,68 +50,17 @@ def update_figure(_, __, table1, table2, table3, table4, table5, table6,n_ahead=
     figure6 = px.line(forecasted_data, x=forecasted_data.index, y=debt_factor_cols,
                       title='Debt Factor',
                       template='plotly_dark')
-    forecasted_data = forecasted_data[-18:].transpose().reset_index()
-    # grab the last <forcast horizon> samples
-    data1 = forecasted_data[per_cap_spending].to_dict('records')
-    data2 = forecasted_data[delinquency_rates].to_dict('records')
-    data3 = forecasted_data[cpi_cols1].to_dict('records')
-    data4 = forecasted_data[cpi_cols2].to_dict('records')
-    data5 = forecasted_data[rate_cols][-18:].to_dict('records')
-    data6 = forecasted_data[debt_factor_cols][-18:].to_dict('records')
-    columns=[{'name': i, 'id': i} for i in forecasted_data.columns]
+    return figure1, figure2, figure3, figure4, figure5, figure6
 
-    return figure1, figure2, figure3, figure4, figure5, figure6, \
-              columns, data1, columns, data2, columns, data3, columns, data4, columns, data5, columns, data6
-
-
-def layout_for_inflation_impact(forecast_horizon=18):
-    variables = [7, 5, 4, 4, 3, 2]
+def layout_for_inflation_impact():
     layout_to_return = html.Div(id='parent', style={'backgroundColor': '#121212'}, children=[
-        
-        html.Button('Forecast', id='cx_inflation_submit2', n_clicks=0, style={'background-color': '#121212',
-                                                                              'color': 'white',
-                                                                              'height': '50px',
-                                                                              'width': '100px',
-                                                                              'margin-top': '50px',
-                                                                              'margin-left': '50px',
-                                                                              'border-radius': '12px'}),
         dcc.Graph(id='cx_inflation_g1'),
-        dash_table.DataTable(
-            id='cx_inflation_table1',
-            editable=True),
-        
         dcc.Graph(id='cx_inflation_g2'),
-        dash_table.DataTable(
-            id='cx_inflation_table2',
-            editable=True),
-        
         dcc.Graph(id='cx_inflation_g3'),
-        dash_table.DataTable(
-            id='cx_inflation_table3',
-            editable=True),
-        
         dcc.Graph(id='cx_inflation_g4'),
-        dash_table.DataTable(
-            id='cx_inflation_table4',
-            editable=True),
-        
         dcc.Graph(id='cx_inflation_g5'),
-        dash_table.DataTable(
-            id='cx_inflation_table5',
-            editable=True),
-        
         dcc.Graph(id='cx_inflation_g6'),
-        dash_table.DataTable(
-            id='cx_inflation_table6',
-            editable=True),
-        
-        html.Button('Forecast', id='cx_inflation_submit', n_clicks=0, style={'background-color': '#121212',
-                                                                             'color': 'white',
-                                                                             'height': '50px',
-                                                                             'width': '100px',
-                                                                             'margin-top': '50px',
-                                                                             'margin-left': '50px',
-                                                                             'border-radius': '12px'}),
+        dcc.Store(id='cx_inflation_store', storage_type='session')
     ])
     return layout_to_return
 
