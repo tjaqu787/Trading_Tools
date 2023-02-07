@@ -41,7 +41,7 @@ def build_header():
     header = dbc.Navbar(
         dbc.Container(
             [
-                dbc.NavbarBrand("Economic Correction", href="#"),
+                dbc.NavbarBrand("Trading Tools", href="#"),
                 dbc.NavbarToggler(id="navbar-toggler"),
                 dbc.Collapse(
                     dbc.Nav([sector_dropdown, cx_health,trading_tools], className="ms-auto", navbar=True),
