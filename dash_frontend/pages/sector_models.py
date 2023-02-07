@@ -39,7 +39,7 @@ sector_dropdown = ['Food', 'BeverageAndTobaccoProducts', 'TextileMillsAndTextile
            Output('g4', 'figure'),
            Output('g5', 'figure'),
            Output('g6', 'figure')], [Input('sector_sel', 'data')])
-def update_figure(_, __, sector_selection='Food'):
+def update_figure(sector_selection='Food'):
     model = GeneralIncomeStatementModel(sector=sector_selection)
     qfr_cols = [f'{sector_selection}revenueseries', f'{sector_selection}depreciationseries',
                 f'{sector_selection}costsseries', f'{sector_selection}interestexpenseseries']
@@ -90,7 +90,8 @@ def layout(sector_selection=None):
         dcc.Graph(id='g3'),
         dcc.Graph(id='g4'),
         dcc.Graph(id='g5'),
-        dcc.Graph(id='g6'), ])
+        dcc.Graph(id='g6'),
+        dcc.Store(id='sector_sel', data=sector_selection)])
     return lay_out
 
 

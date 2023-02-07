@@ -3,7 +3,7 @@ import pandas as pd
 from dash import html, dcc, callback, dash_table
 import plotly.express as px
 from dash.dependencies import Input, Output, State
-from models.sector_models.consumer_health.consumerhealth import ConsumerHealthModel
+from models.sector_models.consumer_health.consumerhealth import data_for_consumer_health
 
 if __name__ == '__main__':
     app = dash.Dash()
@@ -16,10 +16,8 @@ dash.register_page(__name__, path='/consumerhealth',
 @callback([Output('cx_inflation_g1', 'figure'), Output('cx_inflation_g2', 'figure'),
            Output('cx_inflation_g3', 'figure'), Output('cx_inflation_g4', 'figure'),
            Output('cx_inflation_g5', 'figure'), Output('cx_inflation_g6', 'figure')],
-          [Input('cx_inflation_store', 'value')])
+          [Input('cx_inflation_store', 'data')])
 def update_figure(_):
-
-    model = ConsumerHealthModel()
     per_cap_spending = ["PCEDurableGoods", "PCENonDurableGoods", "PCEServices", 'Personalinterestpayments',
                         'DisposablePersonalIncome', 'PersonalSaving', 'TotalCredit']
     cpi_cols1 = ['Transportation', 'Recreation', 'Othergoodsandservices', 'Medicalcare']
@@ -29,9 +27,9 @@ def update_figure(_):
                          'DelinquencyRateOnCreditCardLoans', 'DelinquencyRateOnLeaseFinancingReceivables',
                          'DelinquencyRateOnConsumerLoans']
     debt_factor_cols = ['RevolvingCreditChange', 'NonRevolvingCreditChange']
-    #load forecast data and append to data array to plot
-    forecasted_data = model.data_for_model()
-
+    # load forecast data and append to data array to plot
+    forecasted_data = data_for_consumer_health()
+    
     figure1 = px.line(forecasted_data, x=forecasted_data.index, y=per_cap_spending,
                       title='Personal Consumption Expenditures',
                       template='plotly_dark')
@@ -52,6 +50,7 @@ def update_figure(_):
                       template='plotly_dark')
     return figure1, figure2, figure3, figure4, figure5, figure6
 
+
 def layout_for_inflation_impact():
     layout_to_return = html.Div(id='parent', style={'backgroundColor': '#121212'}, children=[
         dcc.Graph(id='cx_inflation_g1'),
@@ -60,7 +59,7 @@ def layout_for_inflation_impact():
         dcc.Graph(id='cx_inflation_g4'),
         dcc.Graph(id='cx_inflation_g5'),
         dcc.Graph(id='cx_inflation_g6'),
-        dcc.Store(id='cx_inflation_store', storage_type='session')
+        dcc.Store(id='cx_inflation_store', data=1)
     ])
     return layout_to_return
 

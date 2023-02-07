@@ -33,7 +33,9 @@ def build_header():
     cx_health = dbc.DropdownMenu(
         children=[dbc.DropdownMenuItem('Consumer Health', href='/consumerhealth')],
         nav=True, in_navbar=True, label="Consumer Health", )
-    
+    trading_tools = dbc.DropdownMenu(
+        children=[dbc.DropdownMenuItem('Option Spreads', href='/option_spreads')],
+        nav=True, in_navbar=True, label="Option Spreads", )
     # here's how you can recreate the same thing using Navbar
     # (see also required callback at the end of the file)
     header = dbc.Navbar(
@@ -42,7 +44,7 @@ def build_header():
                 dbc.NavbarBrand("Economic Correction", href="#"),
                 dbc.NavbarToggler(id="navbar-toggler"),
                 dbc.Collapse(
-                    dbc.Nav([sector_dropdown, cx_health], className="ms-auto", navbar=True),
+                    dbc.Nav([sector_dropdown, cx_health,trading_tools], className="ms-auto", navbar=True),
                     id="navbar-collapse",
                     navbar=True,
                 ),
